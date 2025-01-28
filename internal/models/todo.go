@@ -1,7 +1,8 @@
 package models
 
 type Todo struct {
-	id          string
-	title       string
-	description string
+	ID          string
+	Title       string
+	Description string
+	Done        bool
 }

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"todo/internal/models"
 
 	"gorm.io/driver/sqlite"
@@ -15,22 +16,38 @@ type DBConfig struct {
 	path string
 }
 
-type TodoRecord struct {
-	gorm.Model
-	todo models.Todo
-}
-
-func (sqldb *SQLiteDB) init() {
-	var err error
+func (sqldb *SQLiteDB) init() (err error) {
 	sqldb.db, err = gorm.Open(sqlite.Open(sqldb.config.path), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		return
 	}
 
-	sqldb.db.AutoMigrate(&TodoRecord{})
-}
-
-func (sqldb *SQLiteDB) add(newTodo models.Todo) (err error) {
-	sqldb.db.Create(&TodoRecord{todo: newTodo})
+	err = sqldb.db.AutoMigrate(&models.Todo{})
 	return
 }
+
+func (sqldb *SQLiteDB) add(newTodo *models.Todo) (err error) {
+	_, err = sqldb.get(newTodo.ID)
+	if err == nil {
+		return gorm.ErrDuplicatedKey
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return
+	}
+	err = sqldb.db.Create(newTodo).Error
+	return
+}
+
+func (sqldb *SQLiteDB) get(id string) (data []models.Todo, err error) {
+	err = sqldb.db.Find(&data, "ID = ?", id).Error
+	return
+}
+
+//func (sqldb *SQLiteDB) list(done bool) (data []models.Todo, err error) {
+//	err = sqldb.db.Find(&data, "done = ", done).Error
+//	return
+//}
+//
+//func (sqldb *SQLiteDB) listAll() (data []models.Todo, err error) {
+//	err = sqldb.db.Find(&data).Error
+//	return
+//}
