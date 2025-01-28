@@ -1,36 +1,36 @@
 package db
 
 import (
-    "todo/internal/models"
+	"todo/internal/models"
 
-    "gorm.io/gorm"
-    "gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 type SQLiteDB struct {
-    db *gorm.DB
-    config DBConfig
+	db     *gorm.DB
+	config DBConfig
 }
 type DBConfig struct {
-    path string
+	path string
 }
 
 type TodoRecord struct {
-    gorm.Model
-    todo models.Todo
+	gorm.Model
+	todo models.Todo
 }
 
-func (sqldb *SQLiteDB) init()  {
-    var err error
-    sqldb.db, err = gorm.Open(sqlite.Open(sqldb.config.path), &gorm.Config{})
-    if err != nil {
-        panic("failed to connect database")
-    }
+func (sqldb *SQLiteDB) init() {
+	var err error
+	sqldb.db, err = gorm.Open(sqlite.Open(sqldb.config.path), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
 
-    sqldb.db.AutoMigrate(&TodoRecord{})
+	sqldb.db.AutoMigrate(&TodoRecord{})
 }
 
 func (sqldb *SQLiteDB) add(newTodo models.Todo) (err error) {
-    sqldb.db.Create(&TodoRecord{todo: newTodo})
-    return
+	sqldb.db.Create(&TodoRecord{todo: newTodo})
+	return
 }
