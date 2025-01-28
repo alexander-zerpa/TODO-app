@@ -30,7 +30,7 @@ func (sqldb *SQLiteDB) init()  {
     sqldb.db.AutoMigrate(&TodoRecord{})
 }
 
-func (sqldb *SQLiteDB) add(newTodo models.Todo) err error {
+func (sqldb *SQLiteDB) add(newTodo models.Todo) (err error) {
     sqldb.db.Create(&TodoRecord{todo: newTodo})
     return
 }
