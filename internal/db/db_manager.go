@@ -16,7 +16,7 @@ type DBConfig struct {
 	path string
 }
 
-func (sqldb *SQLiteDB) init() (err error) {
+func (sqldb *SQLiteDB) Init() (err error) {
 	sqldb.db, err = gorm.Open(sqlite.Open(sqldb.config.path), &gorm.Config{})
 	if err != nil {
 		return
@@ -26,7 +26,7 @@ func (sqldb *SQLiteDB) init() (err error) {
 	return
 }
 
-func (sqldb *SQLiteDB) add(newTodo *models.Todo) (err error) {
+func (sqldb *SQLiteDB) Add(newTodo *models.Todo) (err error) {
 	_, err = sqldb.get(newTodo.ID)
 	if err == nil {
 		return gorm.ErrDuplicatedKey
@@ -37,17 +37,21 @@ func (sqldb *SQLiteDB) add(newTodo *models.Todo) (err error) {
 	return
 }
 
+func (sqldb *SQLiteDB) Update(newTodo *models.Todo) (err error) {
+	return
+}
+
+func (sqldb *SQLiteDB) List(done bool) (data []models.Todo, err error) {
+	err = sqldb.db.Find(&data, "done = ?", done).Error
+	return
+}
+
+func (sqldb *SQLiteDB) ListAll() (data []models.Todo, err error) {
+	err = sqldb.db.Find(&data).Error
+	return
+}
+
 func (sqldb *SQLiteDB) get(id string) (data []models.Todo, err error) {
 	err = sqldb.db.Find(&data, "ID = ?", id).Error
 	return
 }
-
-//func (sqldb *SQLiteDB) list(done bool) (data []models.Todo, err error) {
-//	err = sqldb.db.Find(&data, "done = ", done).Error
-//	return
-//}
-//
-//func (sqldb *SQLiteDB) listAll() (data []models.Todo, err error) {
-//	err = sqldb.db.Find(&data).Error
-//	return
-//}

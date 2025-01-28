@@ -7,13 +7,13 @@ import (
 )
 
 func init() {
-    rootCmd.AddCommand(add)
+	rootCmd.AddCommand(add)
 }
 
 var add = &cobra.Command{
-    Use:    "add",
-    Short:  "add new todo",
-    Run:    func(cmd *cobra.Command, args []string)  {
-        fmt.Println("adding stuff")
-    },
+	Use:   "add",
+	Short: "add new todo",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("adding stuff")
+	},
 }
