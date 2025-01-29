@@ -2,7 +2,6 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
-	"todo/internal/db"
 )
 
 func init() {
@@ -14,8 +13,6 @@ var done = &cobra.Command{
 	Short: "mark todo as done",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		database := db.NewSQLiteDB(db.DefaultDBConfig)
-
 		todos, err := database.Get(args[0])
 		if err != nil {
 			cmd.Printf("Error: %v\n", err)

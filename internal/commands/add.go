@@ -2,7 +2,6 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
-	"todo/internal/db"
 	"todo/internal/models"
 )
 
@@ -15,14 +14,8 @@ var add = &cobra.Command{
 	Short: "add new todo",
 	Args:  cobra.ExactArgs(3),
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 3 {
-			cmd.Help()
-			return
-		}
-
 		todo := models.Todo{ID: args[0], Title: args[1], Description: args[2]}
 
-		database := db.NewSQLiteDB(db.DefaultDBConfig)
 		err := database.Add(&todo)
 		if err != nil {
 			cmd.Printf("Error: %v\n", err)

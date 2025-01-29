@@ -7,8 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var DefaultDBConfig = DBConfig{Path: "todo.db"}
-
 type sqliteDB struct {
 	db     *gorm.DB
 	config DBConfig

@@ -1,17 +1,15 @@
 package commands
 
 import (
-	"todo/internal/db"
-
 	"github.com/spf13/cobra"
 )
 
-var All bool
-var Done bool
+var listAll bool
+var listDone bool
 
 func init() {
-	list.Flags().BoolVarP(&All, "all", "", false, "list all todos")
-	list.Flags().BoolVarP(&Done, "done", "", false, "list done todos")
+	list.Flags().BoolVarP(&listAll, "all", "", false, "list all todos")
+	list.Flags().BoolVarP(&listDone, "done", "", false, "list done todos")
 	rootCmd.AddCommand(list)
 }
 
@@ -19,16 +17,14 @@ var list = &cobra.Command{
 	Use:   "list",
 	Short: "list saved todos",
 	Run: func(cmd *cobra.Command, args []string) {
-		database := db.NewSQLiteDB(db.DefaultDBConfig)
-
-		if All {
+		if listAll {
 			data, err := database.ListAll()
 			if err != nil {
 				cmd.Printf("Error: %v\n", err)
 				return
 			}
 			cmd.Printf("All todos: %+v\n", data)
-		} else if Done {
+		} else if listDone {
 			data, err := database.List(true)
 			if err != nil {
 				cmd.Printf("Error: %v\n", err)

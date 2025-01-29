@@ -5,5 +5,6 @@ import (
 )
 
 func main() {
+	commands.DBPath = "todo.db"
 	commands.Execute()
 }
