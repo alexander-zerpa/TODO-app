@@ -38,7 +38,14 @@ func (sqldb *SQLiteDB) Add(newTodo *models.Todo) (err error) {
 }
 
 func (sqldb *SQLiteDB) Update(newTodo *models.Todo) (err error) {
-	return
+    oldTodo, err := sqldb.get(newTodo.ID)
+    if err != nil {
+        return
+	} else if len(oldTodo) != 1 {
+		return gorm.ErrInvalidData
+	}
+    sqldb.db.Model(&oldTodo[0]).Updates(newTodo)
+    return
 }
 
 func (sqldb *SQLiteDB) List(done bool) (data []models.Todo, err error) {
