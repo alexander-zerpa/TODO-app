@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"fmt"
+	"todo/internal/db"
 
 	"github.com/spf13/cobra"
 )
@@ -19,12 +19,29 @@ var list = &cobra.Command{
 	Use:   "list",
 	Short: "list saved todos",
 	Run: func(cmd *cobra.Command, args []string) {
+		database := db.NewSQLiteDB(db.DefaultDBConfig)
+
 		if All {
-			fmt.Println("list all things")
+			data, err := database.ListAll()
+			if err != nil {
+				cmd.Printf("Error: %v\n", err)
+				return
+			}
+			cmd.Printf("All todos: %+v\n", data)
 		} else if Done {
-			fmt.Println("list done things")
+			data, err := database.List(true)
+			if err != nil {
+				cmd.Printf("Error: %v\n", err)
+				return
+			}
+			cmd.Printf("Done todos: %+v\n", data)
 		} else {
-			fmt.Println("list things")
+			data, err := database.List(false)
+			if err != nil {
+				cmd.Printf("Error: %v\n", err)
+				return
+			}
+			cmd.Printf("Pending todos: %+v\n", data)
 		}
 	},
 }
