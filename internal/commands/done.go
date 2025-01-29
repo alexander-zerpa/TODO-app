@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +11,8 @@ func init() {
 var done = &cobra.Command{
 	Use:   "done",
 	Short: "mark todo as done",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("this is done")
+		cmd.Printf("this is done %v", args[0])
 	},
 }
