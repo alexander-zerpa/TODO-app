@@ -250,19 +250,19 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func initTest(t *testing.T) (db *SQLiteDB) {
+func initTest(t *testing.T) (db *sqliteDB) {
 	t.Helper()
 
 	//db = &SQLiteDB{config: DBConfig{path: "db_test.db"}}
-	db = &SQLiteDB{config: DBConfig{path: ":memory:"}}
-	err := db.Init()
+	db = &sqliteDB{config: DBConfig{Path: ":memory:"}}
+	err := db.init()
 	if err != nil {
 		t.Fatalf("Error initializing database: %v", err)
 	}
 	return
 }
 
-func populateDB(t *testing.T, data []models.Todo) (db *SQLiteDB) {
+func populateDB(t *testing.T, data []models.Todo) (db *sqliteDB) {
 	db = initTest(t)
 	for _, todo := range data {
 		err := db.db.Create(&todo).Error
@@ -273,7 +273,7 @@ func populateDB(t *testing.T, data []models.Todo) (db *SQLiteDB) {
 	return
 }
 
-func validateDB(t *testing.T, db *SQLiteDB, ExpectedDB []models.Todo) {
+func validateDB(t *testing.T, db *sqliteDB, ExpectedDB []models.Todo) {
 	var data []models.Todo
 	err := db.db.Find(&data).Error
 	if err != nil {
