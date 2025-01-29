@@ -9,16 +9,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func initTest(t *testing.T) (db *SQLiteDB) {
-	t.Helper()
-
-	//db = &SQLiteDB{config: DBConfig{path: "db_test.db"}}
-	db = &SQLiteDB{config: DBConfig{path: ":memory:"}}
-	err := db.Init()
-	if err != nil {
-		t.Fatalf("Error initializing database: %v", err)
-	}
-	return
+type TestDB struct {
+	InitialDB []models.Todo
+	FinalDB   []models.Todo
 }
 
 func TestInit(t *testing.T) {
@@ -26,54 +19,79 @@ func TestInit(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	db := initTest(t)
-	expectedTodo := models.Todo{ID: "1", Title: "Test", Description: "Test", Done: false}
-
-	err := db.Add(&expectedTodo)
-	if err != nil {
-		t.Errorf("Error adding todo: %v", err)
+	cases := []struct {
+		testDB   TestDB
+		Name     string
+		Input    models.Todo
+		Expected error
+	}{
+		{
+			TestDB{
+				[]models.Todo{},
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+			},
+			"Add element",
+			models.Todo{ID: "1", Title: "Test", Description: "Test", Done: false},
+			nil,
+		},
+		{
+			TestDB{
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+			},
+			"Add existent element",
+			models.Todo{ID: "1", Title: "Test", Description: "Test", Done: false},
+			gorm.ErrDuplicatedKey,
+		},
 	}
 
-	var res models.Todo
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			db := populateDB(t, test.testDB.InitialDB)
+			defer validateDB(t, db, test.testDB.FinalDB)
 
-	err = db.db.First(&res, "ID = ?", expectedTodo.ID).Error
-	if err != nil {
-		t.Fatalf("Error getting todo: %v", err)
-	}
-	if !reflect.DeepEqual(res, expectedTodo) {
-		t.Errorf("Expected %v, got %v", expectedTodo, res)
-	}
-
-	err = db.Add(&expectedTodo)
-	if !errors.Is(err, gorm.ErrDuplicatedKey) {
-		t.Errorf("Expected error adding duplicate todo, recived: %v", err)
+			err := db.Add(&test.Input)
+			if !errors.Is(test.Expected, err) {
+				t.Errorf("Expected error %v, got %v", test.Expected, err)
+			}
+		})
 	}
 }
 
 func TestList(t *testing.T) {
+	testDB := TestDB{[]models.Todo{
+		{ID: "1", Title: "Test", Description: "Test", Done: false},
+		{ID: "2", Title: "Test", Description: "Test", Done: true},
+	},
+		[]models.Todo{
+			{ID: "1", Title: "Test", Description: "Test", Done: false},
+			{ID: "2", Title: "Test", Description: "Test", Done: true},
+		},
+	}
+
 	cases := []struct {
-		Name      string
-		InitialDB []models.Todo
-		Input     bool
-		Expected  []models.Todo
+		testDB   TestDB
+		Name     string
+		Input    bool
+		Expected []models.Todo
 	}{
 		{
+			testDB,
 			"get done items",
-			[]models.Todo{
-				{ID: "1", Title: "Test", Description: "Test", Done: false},
-				{ID: "2", Title: "Test", Description: "Test", Done: true},
-			},
 			true,
 			[]models.Todo{
 				{ID: "2", Title: "Test", Description: "Test", Done: true},
 			},
 		},
 		{
+			testDB,
 			"get pending items",
-			[]models.Todo{
-				{ID: "1", Title: "Test", Description: "Test", Done: false},
-				{ID: "2", Title: "Test", Description: "Test", Done: true},
-			},
 			false,
 			[]models.Todo{
 				{ID: "1", Title: "Test", Description: "Test", Done: false},
@@ -83,7 +101,9 @@ func TestList(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
-			db := populateDB(t, test.InitialDB)
+			db := populateDB(t, test.testDB.InitialDB)
+			defer validateDB(t, db, test.testDB.FinalDB)
+
 			got, err := db.List(test.Input)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -116,6 +136,8 @@ func TestListAll(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
 			db := populateDB(t, test.Expected)
+			defer validateDB(t, db, test.Expected)
+
 			got, err := db.ListAll()
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
@@ -125,6 +147,119 @@ func TestListAll(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdate(t *testing.T) {
+	cases := []struct {
+		testDB   TestDB
+		Name     string
+		Input    models.Todo
+		Expected error
+	}{
+		{
+			TestDB{
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: true},
+				},
+			},
+			"Update element",
+			models.Todo{ID: "1", Title: "Test", Description: "Test", Done: true},
+			nil,
+		},
+		{
+			TestDB{
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+			},
+			"Update nonexistent element",
+			models.Todo{ID: "7", Title: "Test", Description: "Test", Done: true},
+			gorm.ErrInvalidData,
+		},
+	}
+
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			db := populateDB(t, test.testDB.InitialDB)
+			defer validateDB(t, db, test.testDB.FinalDB)
+
+			err := db.Update(&test.Input)
+			if !errors.Is(test.Expected, err) {
+				t.Errorf("Expected error %v, got %v", test.Expected, err)
+			}
+		})
+	}
+}
+
+func TestGet(t *testing.T) {
+	cases := []struct {
+		testDB        TestDB
+		Name          string
+		Input         string
+		Expected      []models.Todo
+		ExpectedError error
+	}{
+		{
+			TestDB{
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+			},
+			"Get element",
+			"1",
+			[]models.Todo{{ID: "1", Title: "Test", Description: "Test", Done: false}},
+			nil,
+		},
+		{
+			TestDB{
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+				[]models.Todo{
+					{ID: "1", Title: "Test", Description: "Test", Done: false},
+				},
+			},
+			"Get element",
+			"7",
+			[]models.Todo{},
+			nil,
+		},
+	}
+
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			db := populateDB(t, test.testDB.InitialDB)
+			defer validateDB(t, db, test.testDB.FinalDB)
+
+			res, err := db.Get(test.Input)
+			if !errors.Is(test.ExpectedError, err) {
+				t.Errorf("Expected error %v, got %v", test.Expected, err)
+			} else if !reflect.DeepEqual(res, test.Expected) {
+				t.Errorf("Expected %v, got %v", test.Expected, res)
+			}
+		})
+	}
+}
+
+func initTest(t *testing.T) (db *SQLiteDB) {
+	t.Helper()
+
+	//db = &SQLiteDB{config: DBConfig{path: "db_test.db"}}
+	db = &SQLiteDB{config: DBConfig{path: ":memory:"}}
+	err := db.Init()
+	if err != nil {
+		t.Fatalf("Error initializing database: %v", err)
+	}
+	return
 }
 
 func populateDB(t *testing.T, data []models.Todo) (db *SQLiteDB) {
@@ -138,46 +273,12 @@ func populateDB(t *testing.T, data []models.Todo) (db *SQLiteDB) {
 	return
 }
 
-func TestUpdate(t *testing.T) {
-	db := initTest(t)
-	initialTodo := models.Todo{ID: "1", Title: "Test", Description: "Test", Done: false}
-	expectedTodo := models.Todo{ID: "1", Title: "Test", Description: "Test", Done: true}
-
-	err := db.db.Create(&initialTodo).Error
+func validateDB(t *testing.T, db *SQLiteDB, ExpectedDB []models.Todo) {
+	var data []models.Todo
+	err := db.db.Find(&data).Error
 	if err != nil {
-		t.Errorf("Error adding todo: %v", err)
-	}
-
-	err = db.Update(&expectedTodo)
-	if err != nil {
-		t.Errorf("Error updating todo: %v", err)
-	}
-
-	var res models.Todo
-
-	err = db.db.First(&res, "ID = ?", expectedTodo.ID).Error
-	if err != nil {
-		t.Fatalf("Error getting todo: %v", err)
-	}
-	if !reflect.DeepEqual(res, expectedTodo) {
-		t.Errorf("Expected %v, got %v", expectedTodo, res)
-	}
-}
-
-func TestGet(t *testing.T) {
-	db := initTest(t)
-	expectedTodo := models.Todo{ID: "1", Title: "Test", Description: "Test", Done: false}
-	err := db.db.Create(expectedTodo).Error
-
-	if err != nil {
-		t.Fatalf("Error adding todo: %v", err)
-	}
-
-	res, err := db.get(expectedTodo.ID)
-	if err != nil {
-		t.Fatalf("Error getting todo: %v", err)
-	}
-	if !reflect.DeepEqual(res[0], expectedTodo) {
-		t.Errorf("Expected %v, got %v", expectedTodo, res)
+		t.Fatalf("Error validating expectedDB: %v", err)
+	} else if !reflect.DeepEqual(data, ExpectedDB) {
+		t.Errorf("Expected %v, got %v", ExpectedDB, data)
 	}
 }

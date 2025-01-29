@@ -27,7 +27,7 @@ func (sqldb *SQLiteDB) Init() (err error) {
 }
 
 func (sqldb *SQLiteDB) Add(newTodo *models.Todo) (err error) {
-	data, err := sqldb.get(newTodo.ID)
+	data, err := sqldb.Get(newTodo.ID)
 	if err != nil {
 		return
 	} else if len(data) != 0 {
@@ -38,14 +38,14 @@ func (sqldb *SQLiteDB) Add(newTodo *models.Todo) (err error) {
 }
 
 func (sqldb *SQLiteDB) Update(newTodo *models.Todo) (err error) {
-    oldTodo, err := sqldb.get(newTodo.ID)
-    if err != nil {
-        return
+	oldTodo, err := sqldb.Get(newTodo.ID)
+	if err != nil {
+		return
 	} else if len(oldTodo) != 1 {
 		return gorm.ErrInvalidData
 	}
-    sqldb.db.Model(&oldTodo[0]).Updates(newTodo)
-    return
+	sqldb.db.Model(&oldTodo[0]).Updates(newTodo)
+	return
 }
 
 func (sqldb *SQLiteDB) List(done bool) (data []models.Todo, err error) {
@@ -58,7 +58,7 @@ func (sqldb *SQLiteDB) ListAll() (data []models.Todo, err error) {
 	return
 }
 
-func (sqldb *SQLiteDB) get(id string) (data []models.Todo, err error) {
+func (sqldb *SQLiteDB) Get(id string) (data []models.Todo, err error) {
 	err = sqldb.db.Find(&data, "ID = ?", id).Error
 	return
 }
