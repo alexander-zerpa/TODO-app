@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"todo/internal/models"
@@ -44,7 +45,7 @@ func TestAdd(t *testing.T) {
 	}
 
 	err = db.Add(&expectedTodo)
-	if err != gorm.ErrDuplicatedKey {
+	if !errors.Is(err, gorm.ErrDuplicatedKey) {
 		t.Errorf("Expected error adding duplicate todo, recived: %v", err)
 	}
 }

@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"todo/internal/models"
 
 	"gorm.io/driver/sqlite"
@@ -12,6 +11,7 @@ type SQLiteDB struct {
 	db     *gorm.DB
 	config DBConfig
 }
+
 type DBConfig struct {
 	path string
 }
@@ -27,11 +27,11 @@ func (sqldb *SQLiteDB) Init() (err error) {
 }
 
 func (sqldb *SQLiteDB) Add(newTodo *models.Todo) (err error) {
-	_, err = sqldb.get(newTodo.ID)
-	if err == nil {
-		return gorm.ErrDuplicatedKey
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+	data, err := sqldb.get(newTodo.ID)
+	if err != nil {
 		return
+	} else if len(data) != 0 {
+		return gorm.ErrDuplicatedKey
 	}
 	err = sqldb.db.Create(newTodo).Error
 	return
